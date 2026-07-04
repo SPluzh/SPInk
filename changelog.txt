@@ -1,4 +1,15 @@
 
+v1.3.0 (Jul. 4, 2026)
+=================
+- Upgrade target framework version to .NET Framework 4.7.2 for improved compatibility under modern Windows 10/11.
+- Add an automated build script (build.bat) to simplify compilations using MSBuild.
+- Enable High-DPI support (HiDPI) with PerMonitorV2 awareness for sharp rendering on high-resolution displays.
+- Fix pen width slider interaction, boundary limits, and background scaling issues under High-DPI configurations.
+- Fix a race condition crash in the Options window caused by timer1 ticking before controls are initialized during FormOptions_Load.
+- Allow opening the Options window while drawing is active (forcing topmost layer) and dynamically refreshing toolbar buttons/styles on close.
+- Add the ability to draw a straight line by holding down the Shift key while drawing.
+- Add straight line snapping to the nearest horizontal or vertical axis when holding down the Ctrl key while drawing.
+
 v1.2.0 (Feb. 13, 2023)
 =================
 - Allow using F1 to F12 as hotkeys.

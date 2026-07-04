@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -290,6 +290,11 @@ namespace gInk
 			Root.SaveOptions("config.ini");
 			Root.SaveOptions("hotkeys.ini");
 
+			if (Root.FormCollection != null)
+			{
+				Root.FormCollection.ReloadButtons();
+			}
+
 			Root.FormOptions = null;
 		}
 
@@ -363,6 +368,9 @@ namespace gInk
 		{
 			for (int p = 0; p < Root.MaxPenCount; p++)
 			{
+				if (comboPensWidth[p] == null || comboPensAlpha[p] == null)
+					return;
+
 				if (comboPensWidth[p].Text == Root.Local.OptionsPensThin)
 				{
 					comboPensWidth[p].Text = "30";

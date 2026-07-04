@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -903,14 +903,17 @@ namespace gInk
 		private void OnOptions(object sender, EventArgs e)
 		{
 			if (FormOptions != null)
+			{
+				FormOptions.Activate();
 				return;
-			if (FormDisplay != null || FormCollection != null)
-				return;
+			}
 
 			ReadOptions("pens.ini");
 			ReadOptions("config.ini");
 			ReadOptions("hotkeys.ini");
 			FormOptions = new FormOptions(this);
+			if (FormCollection != null || FormDisplay != null)
+				FormOptions.TopMost = true;
 			FormOptions.Show();
 		}
 

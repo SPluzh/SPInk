@@ -1,4 +1,4 @@
-﻿namespace gInk
+namespace gInk
 {
 	partial class FormCollection
 	{
@@ -272,7 +272,7 @@
 			// 
 			this.gpPenWidth.BackColor = System.Drawing.Color.WhiteSmoke;
 			this.gpPenWidth.BackgroundImage = global::gInk.Properties.Resources.penwidthpanel;
-			this.gpPenWidth.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+			this.gpPenWidth.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
 			this.gpPenWidth.Controls.Add(this.pboxPenWidthIndicator);
 			this.gpPenWidth.Location = new System.Drawing.Point(174, 326);
 			this.gpPenWidth.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);

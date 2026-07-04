@@ -249,6 +249,48 @@ namespace gInk
 					stroke.Move(0, shouldmove);
 		}
 
+		public void StraightenStroke(Stroke stroke)
+		{
+			if (stroke == null || stroke.Deleted)
+				return;
+			int count = stroke.PacketCount;
+			if (count > 1)
+			{
+				Point p0 = stroke.GetPoint(0);
+				Point pN = stroke.GetPoint(count - 1);
+				for (int i = 1; i < count - 1; i++)
+				{
+					float ratio = (float)i / (count - 1);
+					int x = (int)(p0.X + ratio * (pN.X - p0.X));
+					int y = (int)(p0.Y + ratio * (pN.Y - p0.Y));
+					stroke.SetPoint(i, new Point(x, y));
+				}
+			}
+		}
+
+		public void SnapStroke(Stroke stroke)
+		{
+			if (stroke == null || stroke.Deleted)
+				return;
+			int count = stroke.PacketCount;
+			if (count > 1)
+			{
+				Point p0 = stroke.GetPoint(0);
+				Point pN = stroke.GetPoint(count - 1);
+				int dx = Math.Abs(pN.X - p0.X);
+				int dy = Math.Abs(pN.Y - p0.Y);
+				if (dx > dy)
+				{
+					pN.Y = p0.Y;
+				}
+				else
+				{
+					pN.X = p0.X;
+				}
+				stroke.SetPoint(count - 1, pN);
+			}
+		}
+
 		protected override void OnPaint(PaintEventArgs e)
 		{
 			UpdateFormDisplay(true);
@@ -519,8 +561,60 @@ namespace gInk
 						Point rb = new Point(box.Right + 1, box.Bottom + 1);
 						Root.FormCollection.IC.Renderer.InkSpaceToPixel(gCanvus, ref lt);
 						Root.FormCollection.IC.Renderer.InkSpaceToPixel(gCanvus, ref rb);
-						BitBlt(canvusDc, lt.X, lt.Y, rb.X - lt.X, rb.Y - lt.Y, onestrokeDc, lt.X, lt.Y, (uint)CopyPixelOperation.SourceCopy);
-						Root.FormCollection.IC.Renderer.Draw(gCanvus, stroke, Root.FormCollection.IC.DefaultDrawingAttributes);
+
+						bool shiftPressed = Control.ModifierKeys.HasFlag(Keys.Shift);
+						bool ctrlPressed = Control.ModifierKeys.HasFlag(Keys.Control);
+
+						if ((shiftPressed || ctrlPressed) && stroke.PacketCount > 1)
+						{
+							Point p0 = stroke.GetPoint(0);
+							Point pN = stroke.GetPoint(stroke.PacketCount - 1);
+
+							if (ctrlPressed)
+							{
+								int dx = Math.Abs(pN.X - p0.X);
+								int dy = Math.Abs(pN.Y - p0.Y);
+								if (dx > dy)
+								{
+									pN.Y = p0.Y;
+								}
+								else
+								{
+									pN.X = p0.X;
+								}
+							}
+
+							Root.FormCollection.IC.Renderer.InkSpaceToPixel(gCanvus, ref p0);
+							Root.FormCollection.IC.Renderer.InkSpaceToPixel(gCanvus, ref pN);
+
+							Point pt1 = new Point(0, 0);
+							Point pt2 = new Point(0, 100);
+							Root.FormCollection.IC.Renderer.PixelToInkSpace(gCanvus, ref pt1);
+							Root.FormCollection.IC.Renderer.PixelToInkSpace(gCanvus, ref pt2);
+							float unitperpixel = (pt2.Y - pt1.Y) / 100.0f;
+
+							float pixelWidth = stroke.DrawingAttributes.Width / unitperpixel;
+							Color penColor = Color.FromArgb(255 - stroke.DrawingAttributes.Transparency, stroke.DrawingAttributes.Color);
+
+							BitBlt(canvusDc, lt.X, lt.Y, rb.X - lt.X, rb.Y - lt.Y, onestrokeDc, lt.X, lt.Y, (uint)CopyPixelOperation.SourceCopy);
+
+							var oldMode = gCanvus.CompositingMode;
+							gCanvus.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+							using (Pen gdiPen = new Pen(penColor, pixelWidth))
+							{
+								gdiPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+								gdiPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+								gdiPen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+								gdiPen.Alignment = System.Drawing.Drawing2D.PenAlignment.Center;
+								gCanvus.DrawLine(gdiPen, p0, pN);
+							}
+							gCanvus.CompositingMode = oldMode;
+						}
+						else
+						{
+							BitBlt(canvusDc, lt.X, lt.Y, rb.X - lt.X, rb.Y - lt.Y, onestrokeDc, lt.X, lt.Y, (uint)CopyPixelOperation.SourceCopy);
+							Root.FormCollection.IC.Renderer.Draw(gCanvus, stroke, Root.FormCollection.IC.DefaultDrawingAttributes);
+						}
 					}
 					UpdateFormDisplay(true);
 				}

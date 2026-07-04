@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -45,6 +45,14 @@ namespace gInk
 				// turn on WS_EX_TOOLWINDOW style bit
 				cp.ExStyle |= 0x80;
 				return cp;
+			}
+		}
+
+		public float DpiScale
+		{
+			get
+			{
+				return (float)this.DeviceDpi / 96.0f;
 			}
 		}
 
@@ -259,7 +267,7 @@ namespace gInk
 			gpPenWidth.Top = gpButtonsTop - gpPenWidth.Height - 10;
 
 			pboxPenWidthIndicator.Top = 0;
-			pboxPenWidthIndicator.Left = (int)Math.Sqrt(Root.GlobalPenWidth * 30);
+			pboxPenWidthIndicator.Left = (int)(Math.Sqrt(Root.GlobalPenWidth * 30.0f) * DpiScale);
 			gpPenWidth.Controls.Add(pboxPenWidthIndicator);
 
 			IC = new InkOverlay(this.Handle);
@@ -413,8 +421,183 @@ namespace gInk
 			this.toolTip.SetToolTip(this.btStop, Root.Local.ButtonNameExit + " (ESC)");
 		}
 
+		public void ReloadButtons()
+		{
+			gpButtons.Height = (int)(Screen.PrimaryScreen.Bounds.Height * Root.ToolbarHeight);
+			btClear.Height = (int)(gpButtons.Height * 0.88);
+			btClear.Width = btClear.Height;
+			btClear.Top = (int)(gpButtons.Height * 0.07);
+			btDock.Height = (int)(gpButtons.Height * 0.88);
+			btDock.Width = (int)(btDock.Height * 0.75);
+			btDock.Top = (int)(gpButtons.Height * 0.07);
+			btEraser.Height = (int)(gpButtons.Height * 0.88);
+			btEraser.Width = btEraser.Height;
+			btEraser.Top = (int)(gpButtons.Height * 0.07);
+			btInkVisible.Height = (int)(gpButtons.Height * 0.88);
+			btInkVisible.Width = btInkVisible.Height;
+			btInkVisible.Top = (int)(gpButtons.Height * 0.07);
+			btPan.Height = (int)(gpButtons.Height * 0.88);
+			btPan.Width = btPan.Height;
+			btPan.Top = (int)(gpButtons.Height * 0.07);
+			btPointer.Height = (int)(gpButtons.Height * 0.88);
+			btPointer.Width = btPointer.Height;
+			btPointer.Top = (int)(gpButtons.Height * 0.07);
+			btSnap.Height = (int)(gpButtons.Height * 0.88);
+			btSnap.Width = btSnap.Height;
+			btSnap.Top = (int)(gpButtons.Height * 0.07);
+			btStop.Height = (int)(gpButtons.Height * 0.88);
+			btStop.Width = btStop.Height;
+			btStop.Top = (int)(gpButtons.Height * 0.07);
+			btUndo.Height = (int)(gpButtons.Height * 0.88);
+			btUndo.Width = btUndo.Height;
+			btUndo.Top = (int)(gpButtons.Height * 0.07);
+
+			int cumulatedleft = (int)(btStop.Width * 1.2);
+			for (int b = 0; b < Root.MaxPenCount; b++)
+			{
+				btPen[b].Width = (int)(gpButtons.Height * 0.88);
+				btPen[b].Height = (int)(gpButtons.Height * 0.88);
+				btPen[b].Top = (int)(gpButtons.Height * 0.08);
+				btPen[b].BackColor = Root.PenAttr[b].Color;
+				btPen[b].FlatAppearance.MouseDownBackColor = Root.PenAttr[b].Color;
+				btPen[b].FlatAppearance.MouseOverBackColor = Root.PenAttr[b].Color;
+
+				if (Root.PenAttr[b].Transparency >= 100)
+				{
+					image_pen[b] = image_highlighter;
+					image_pen_act[b] = image_highlighter_act;
+				}
+				else
+				{
+					image_pen[b] = image_pencil;
+					image_pen_act[b] = image_pencil_act;
+				}
+
+				this.toolTip.SetToolTip(this.btPen[b], Root.Local.ButtonNamePen[b] + " (" + Root.Hotkey_Pens[b].ToString() + ")");
+
+				if (Root.PenEnabled[b])
+				{
+					btPen[b].Visible = true;
+					btPen[b].Left = cumulatedleft;
+					cumulatedleft += (int)(btPen[b].Width * 1.1);
+				}
+				else
+				{
+					btPen[b].Visible = false;
+				}
+			}
+			cumulatedleft += (int)(btStop.Width * 0.8);
+			if (Root.EraserEnabled)
+			{
+				btEraser.Visible = true;
+				btEraser.Left = cumulatedleft;
+				cumulatedleft += (int)(btEraser.Width * 1.1);
+			}
+			else
+			{
+				btEraser.Visible = false;
+			}
+			if (Root.PanEnabled)
+			{
+				btPan.Visible = true;
+				btPan.Left = cumulatedleft;
+				cumulatedleft += (int)(btPan.Width * 1.1);
+			}
+			else
+			{
+				btPan.Visible = false;
+			}
+			if (Root.PointerEnabled)
+			{
+				btPointer.Visible = true;
+				btPointer.Left = cumulatedleft;
+				cumulatedleft += (int)(btPointer.Width * 1.1);
+			}
+			else
+			{
+				btPointer.Visible = false;
+			}
+			cumulatedleft += (int)(btStop.Width * 0.8);
+			if (Root.PenWidthEnabled)
+			{
+				btPenWidth.Visible = true;
+				btPenWidth.Left = cumulatedleft;
+				cumulatedleft += (int)(btPenWidth.Width * 1.1);
+			}
+			else
+			{
+				btPenWidth.Visible = false;
+			}
+			if (Root.InkVisibleEnabled)
+			{
+				btInkVisible.Visible = true;
+				btInkVisible.Left = cumulatedleft;
+				cumulatedleft += (int)(btInkVisible.Width * 1.1);
+			}
+			else
+			{
+				btInkVisible.Visible = false;
+			}
+			if (Root.SnapEnabled)
+			{
+				btSnap.Visible = true;
+				btSnap.Left = cumulatedleft;
+				cumulatedleft += (int)(btSnap.Width * 1.1);
+			}
+			else
+			{
+				btSnap.Visible = false;
+			}
+			if (Root.UndoEnabled)
+			{
+				btUndo.Visible = true;
+				btUndo.Left = cumulatedleft;
+				cumulatedleft += (int)(btUndo.Width * 1.1);
+			}
+			else
+			{
+				btUndo.Visible = false;
+			}
+			if (Root.ClearEnabled)
+			{
+				btClear.Visible = true;
+				btClear.Left = cumulatedleft;
+				cumulatedleft += (int)(btClear.Width * 1.1);
+			}
+			else
+			{
+				btClear.Visible = false;
+			}
+			cumulatedleft += (int)(btStop.Width * 0.8);
+			btStop.Left = cumulatedleft;
+			gpButtons.Width = btStop.Right + (int)(btStop.Width * 0.5);
+
+			this.toolTip.SetToolTip(this.btDock, Root.Local.ButtonNameDock);
+			this.toolTip.SetToolTip(this.btPenWidth, Root.Local.ButtonNamePenwidth);
+			this.toolTip.SetToolTip(this.btEraser, Root.Local.ButtonNameErasor + " (" + Root.Hotkey_Eraser.ToString() + ")");
+			this.toolTip.SetToolTip(this.btPan, Root.Local.ButtonNamePan + " (" + Root.Hotkey_Pan.ToString() + ")");
+			this.toolTip.SetToolTip(this.btPointer, Root.Local.ButtonNameMousePointer + " (" + Root.Hotkey_Pointer.ToString() + ")");
+			this.toolTip.SetToolTip(this.btInkVisible, Root.Local.ButtonNameInkVisible + " (" + Root.Hotkey_InkVisible.ToString() + ")");
+			this.toolTip.SetToolTip(this.btSnap, Root.Local.ButtonNameSnapshot + " (" + Root.Hotkey_Snap.ToString() + ")");
+			this.toolTip.SetToolTip(this.btUndo, Root.Local.ButtonNameUndo + " (" + Root.Hotkey_Undo.ToString() + ")");
+			this.toolTip.SetToolTip(this.btClear, Root.Local.ButtonNameClear + " (" + Root.Hotkey_Clear.ToString() + ")");
+
+			Root.UponButtonsUpdate |= 0x2;
+		}
+
 		private void IC_Stroke(object sender, InkCollectorStrokeEventArgs e)
 		{
+			bool shiftPressed = Control.ModifierKeys.HasFlag(Keys.Shift);
+			bool ctrlPressed = Control.ModifierKeys.HasFlag(Keys.Control);
+
+			if (shiftPressed || ctrlPressed)
+			{
+				if (ctrlPressed)
+				{
+					Root.FormDisplay.SnapStroke(e.Stroke);
+				}
+				Root.FormDisplay.StraightenStroke(e.Stroke);
+			}
 			SaveUndoStrokes();
 		}
 
@@ -896,10 +1079,11 @@ namespace gInk
 		{
 			if (gpPenWidth_MouseOn)
 			{
-				if (e.X < 10 || gpPenWidth.Width - e.X < 10)
+				float scale = DpiScale;
+				if (e.X < 10 * scale || gpPenWidth.Width - e.X < 10 * scale)
 					return;
 
-				Root.GlobalPenWidth = e.X * e.X / 30;
+				Root.GlobalPenWidth = (int)(e.X * e.X / (30.0f * scale * scale));
 				pboxPenWidthIndicator.Left = e.X - pboxPenWidthIndicator.Width / 2;
 				IC.DefaultDrawingAttributes.Width = Root.GlobalPenWidth;
 				Root.UponButtonsUpdate |= 0x2;
@@ -908,9 +1092,10 @@ namespace gInk
 
 		private void gpPenWidth_MouseUp(object sender, MouseEventArgs e)
 		{
-			if (e.X >= 10 && gpPenWidth.Width - e.X >= 10)
+			float scale = DpiScale;
+			if (e.X >= 10 * scale && gpPenWidth.Width - e.X >= 10 * scale)
 			{
-				Root.GlobalPenWidth = e.X * e.X / 30;
+				Root.GlobalPenWidth = (int)(e.X * e.X / (30.0f * scale * scale));
 				pboxPenWidthIndicator.Left = e.X - pboxPenWidthIndicator.Width / 2;
 				IC.DefaultDrawingAttributes.Width = Root.GlobalPenWidth;
 			}
@@ -932,11 +1117,12 @@ namespace gInk
 		{
 			if (gpPenWidth_MouseOn)
 			{
+				float scale = DpiScale;
 				int x = e.X + pboxPenWidthIndicator.Left;
-				if (x < 10 || gpPenWidth.Width - x < 10)
+				if (x < 10 * scale || gpPenWidth.Width - x < 10 * scale)
 					return;
 
-				Root.GlobalPenWidth = x * x / 30;
+				Root.GlobalPenWidth = (int)(x * x / (30.0f * scale * scale));
 				pboxPenWidthIndicator.Left = x - pboxPenWidthIndicator.Width / 2;
 				IC.DefaultDrawingAttributes.Width = Root.GlobalPenWidth;
 				Root.UponButtonsUpdate |= 0x2;

@@ -1,6 +1,6 @@
 build
 release
-bin/crash.txt
+bin/
 
 *.pdb
 *.exp
@@ -9,3 +9,19 @@ bin/crash.txt
 *.opensdf
 *.lnk
 *vshost.exe*
+
+# Agents & Tools
+.gemini/
+.serena/
+.cursorrules
+.windsurfrules
+gemini.md
+todo.md
+implementation_plan.md
+walkthrough.md
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+.vs/
