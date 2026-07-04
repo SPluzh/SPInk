@@ -54,6 +54,8 @@ namespace gInk
 				cbWhiteIcon.Checked = true;
 			if (Root.AllowDraggingToolbar)
 				cbAllowDragging.Checked = true;
+			if (Root.MoveEachStrokeSeparately)
+				cbMoveEachStrokeSeparately.Checked = true;
 			if (Root.AllowHotkeyInPointerMode)
 				cbAllowHotkeyInPointer.Checked = true;
 
@@ -180,6 +182,7 @@ namespace gInk
 			this.lbSnapshotsavepath.Text = Root.Local.OptionsGeneralSnapshotsavepath;
 			this.cbWhiteIcon.Text = Root.Local.OptionsGeneralWhitetrayicon;
 			this.cbAllowDragging.Text = Root.Local.OptionsGeneralAllowdragging;
+			this.cbMoveEachStrokeSeparately.Text = Root.Local.OptionsGeneralMoveEachStrokeSeparately;
 			this.lbNote.Text = Root.Local.OptionsGeneralNotePenwidth;
 
 			this.lbHkClear.Text = Root.Local.ButtonNameClear;
@@ -403,6 +406,11 @@ namespace gInk
 		private void cbAllowDragging_CheckedChanged(object sender, EventArgs e)
 		{
 			Root.AllowDraggingToolbar = cbAllowDragging.Checked;
+		}
+
+		private void cbMoveEachStrokeSeparately_CheckedChanged(object sender, EventArgs e)
+		{
+			Root.MoveEachStrokeSeparately = cbMoveEachStrokeSeparately.Checked;
 		}
 
 		private void cbAllowHotkeyInPointer_CheckedChanged(object sender, EventArgs e)

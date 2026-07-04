@@ -1,4 +1,4 @@
-﻿namespace gInk
+namespace gInk
 {
 	partial class FormOptions
 	{
@@ -62,6 +62,7 @@
 			this.cbInkVisibleEnabled = new System.Windows.Forms.CheckBox();
 			this.cbPanEnabled = new System.Windows.Forms.CheckBox();
 			this.cbAllowDragging = new System.Windows.Forms.CheckBox();
+			this.cbMoveEachStrokeSeparately = new System.Windows.Forms.CheckBox();
 			this.tabPage2 = new System.Windows.Forms.TabPage();
 			this.tabPage3 = new System.Windows.Forms.TabPage();
 			this.cbAllowHotkeyInPointer = new System.Windows.Forms.CheckBox();
@@ -270,6 +271,7 @@
 			this.tabPage1.Controls.Add(this.cbClearEnabled);
 			this.tabPage1.Controls.Add(this.lbSnapshotsavepath);
 			this.tabPage1.Controls.Add(this.cbAllowDragging);
+			this.tabPage1.Controls.Add(this.cbMoveEachStrokeSeparately);
 			this.tabPage1.Controls.Add(this.cbWhiteIcon);
 			this.tabPage1.Controls.Add(this.tbSnapPath);
 			this.tabPage1.Location = new System.Drawing.Point(4, 29);
@@ -344,6 +346,18 @@
 			this.cbAllowDragging.Text = "Allow dragging toolbar (experimental)";
 			this.cbAllowDragging.UseVisualStyleBackColor = true;
 			this.cbAllowDragging.CheckedChanged += new System.EventHandler(this.cbAllowDragging_CheckedChanged);
+			// 
+			// cbMoveEachStrokeSeparately
+			// 
+			this.cbMoveEachStrokeSeparately.AutoSize = true;
+			this.cbMoveEachStrokeSeparately.Location = new System.Drawing.Point(16, 448);
+			this.cbMoveEachStrokeSeparately.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+			this.cbMoveEachStrokeSeparately.Name = "cbMoveEachStrokeSeparately";
+			this.cbMoveEachStrokeSeparately.Size = new System.Drawing.Size(295, 24);
+			this.cbMoveEachStrokeSeparately.TabIndex = 0;
+			this.cbMoveEachStrokeSeparately.Text = "Move each stroke separately";
+			this.cbMoveEachStrokeSeparately.UseVisualStyleBackColor = true;
+			this.cbMoveEachStrokeSeparately.CheckedChanged += new System.EventHandler(this.cbMoveEachStrokeSeparately_CheckedChanged);
 			// 
 			// tabPage2
 			// 
@@ -675,6 +689,7 @@
 		private System.Windows.Forms.CheckBox cbInkVisibleEnabled;
 		private System.Windows.Forms.CheckBox cbPanEnabled;
 		private System.Windows.Forms.CheckBox cbAllowDragging;
+		private System.Windows.Forms.CheckBox cbMoveEachStrokeSeparately;
 		private HotkeyInputBox hiGlobal;
 		private HotkeyInputBox hiEraser;
 		private System.Windows.Forms.Label lbHkEraser;

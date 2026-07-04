@@ -38,6 +38,7 @@ OptionsGeneralCanvascursorPentip = "Pen tip"
 OptionsGeneralSnapshotsavepath = "Snapshot save path"
 OptionsGeneralWhitetrayicon = "Use white tray icon"
 OptionsGeneralAllowdragging = "Allow dragging toolbar"
+OptionsGeneralMoveEachStrokeSeparately = "Move each stroke separately instead of all"
 OptionsGeneralNotePenwidth = "Note: pen width panel overrides each individual pen width settings"
 
 OptionsPensShow = "Show"

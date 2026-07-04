@@ -38,6 +38,7 @@ OptionsGeneralCanvascursorPentip = "Кисть"
 OptionsGeneralSnapshotsavepath = "Путь к папке со снимками экрана"
 OptionsGeneralWhitetrayicon = "Использовать белую иконку на панели задач"
 OptionsGeneralAllowdragging = "Разрешить перемещение панели инструментов"
+OptionsGeneralMoveEachStrokeSeparately = "Перемещать каждый штрих отдельно, а не все вместе"
 OptionsGeneralNotePenwidth = "Важно: инструмент изменения толщины кисти заменяет индивидуальные настройки кистей"
 
 OptionsPensShow = "Показывать"

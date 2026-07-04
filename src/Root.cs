@@ -60,6 +60,7 @@ namespace gInk
 		public bool ClearEnabled = true;
 		public bool PanEnabled = true;
 		public bool InkVisibleEnabled = true;
+		public bool MoveEachStrokeSeparately = true;
 		public DrawingAttributes[] PenAttr = new DrawingAttributes[MaxPenCount];
 		public bool AutoScroll;
 		public bool WhiteTrayIcon;
@@ -631,6 +632,12 @@ namespace gInk
 							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
 								PanEnabled = false;
 							break;
+						case "MOVE_EACH_STROKE_SEPARATELY":
+							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
+								MoveEachStrokeSeparately = false;
+							else
+								MoveEachStrokeSeparately = true;
+							break;
 						case "INKVISIBLE_ICON":
 							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
 								InkVisibleEnabled = false;
@@ -838,6 +845,12 @@ namespace gInk
 							break;
 						case "PAN_ICON":
 							if (PanEnabled)
+								sPara = "True";
+							else
+								sPara = "False";
+							break;
+						case "MOVE_EACH_STROKE_SEPARATELY":
+							if (MoveEachStrokeSeparately)
 								sPara = "True";
 							else
 								sPara = "False";

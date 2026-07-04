@@ -228,7 +228,7 @@ namespace gInk
 		public void DrawStrokes()
 		{
 			if (Root.InkVisible)
-				Root.FormCollection.IC.Renderer.Draw(gCanvus, Root.FormCollection.IC.Ink.Strokes);
+				DrawStrokes(gCanvus);
 		}
 		public void DrawStrokes(Graphics g)
 		{
@@ -490,15 +490,68 @@ namespace gInk
 		{
 			Tick++;
 
-			/*
-			if (Tick == 1)
-				TickStartTime = DateTime.Now;
-			else if (Tick % 60 == 0)
+			if (Root.PanMode && Root.MoveEachStrokeSeparately)
 			{
-				Console.WriteLine(60 / (DateTime.Now - TickStartTime).TotalMilliseconds * 1000);
-				TickStartTime = DateTime.Now;
+				if (Root.FingerInAction)
+				{
+					Root.FormCollection.ActiveHoveredStroke = Root.FormCollection.ActiveMovingStroke;
+				}
+				else
+				{
+					Point screenPos = System.Windows.Forms.Cursor.Position;
+					Point clientPos = Root.FormCollection.PointToClient(screenPos);
+
+					if (Root.FormCollection.ClientRectangle.Contains(clientPos))
+					{
+						Point inkPos = clientPos;
+						try
+						{
+							Root.FormCollection.IC.Renderer.PixelToInkSpace(gCanvus, ref inkPos);
+
+							float hitRadius = 500.0f;
+							using (Strokes hitStrokes = Root.FormCollection.IC.Ink.HitTest(inkPos, hitRadius))
+							{
+								if (hitStrokes != null && hitStrokes.Count > 0)
+								{
+									Root.FormCollection.ActiveHoveredStroke = hitStrokes[0];
+								}
+								else
+								{
+									Root.FormCollection.ActiveHoveredStroke = null;
+								}
+							}
+						}
+						catch
+						{
+							Root.FormCollection.ActiveHoveredStroke = null;
+						}
+					}
+					else
+					{
+						Root.FormCollection.ActiveHoveredStroke = null;
+					}
+				}
+
+				if (Root.FormCollection.ActiveHoveredStroke != null)
+				{
+					if (Root.FormCollection.Cursor != System.Windows.Forms.Cursors.SizeAll)
+						Root.FormCollection.Cursor = System.Windows.Forms.Cursors.SizeAll;
+				}
+				else
+				{
+					if (Root.FormCollection.Cursor != System.Windows.Forms.Cursors.Default)
+						Root.FormCollection.Cursor = System.Windows.Forms.Cursors.Default;
+				}
 			}
-			*/
+			else
+			{
+				if (Root.FormCollection.ActiveHoveredStroke != null)
+				{
+					Root.FormCollection.ActiveHoveredStroke = null;
+					if (Root.FormCollection.Cursor != System.Windows.Forms.Cursors.Default)
+						Root.FormCollection.Cursor = System.Windows.Forms.Cursors.Default;
+				}
+			}
 
 			if (Root.UponAllDrawingUpdate)
 			{

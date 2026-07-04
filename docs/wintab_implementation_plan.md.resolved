@@ -1,0 +1,617 @@
+# Вариант В: WinTab API — Подробный план реализации (v2)
+
+> **Цель**: Добавить поддержку силы нажатия пера через `WinTab32.dll` с возможностью выбора источника давления и live-тестом в настройках.
+
+> [!IMPORTANT]
+> Платформа **x86** не меняется. `Microsoft.Ink.dll` остаётся — InkOverlay захватывает штрихи (X, Y). WinTab используется **только для `NormalPressure`** параллельно.
+
+---
+
+## Архитектурная схема
+
+```
+Перо → WinTab32.dll драйвер
+         ├── WM_WINTAB (WT_PACKET) → FormCollection.WndProc
+         │       └── WinTabManager.WTPacket() → Root.CurrentPressure
+         │
+         └── Microsoft.Ink (параллельно, не трогаем)
+                 ├── IC_MouseMove  → DrawOneStroke (использует Root.CurrentPressure)
+                 └── IC_Stroke     → PressureBuffer → SaveUndoStrokes
+
+Root.PressureSource (0=WinTab / 1=Ink / 2=Fixed)
+    → IC_MouseMove читает давление из нужного источника
+```
+
+---
+
+## Фаза 1 — WinTabManager.cs (новый файл)
+
+**Файл**: `src/WinTabManager.cs`
+
+### 1.1 Структуры и константы
+
+```csharp
+using System;
+using System.Runtime.InteropServices;
+
+namespace gInk
+{
+    public static class WinTabManager
+    {
+        public const int WT_PACKET    = 0x7FF0;
+        public const int WT_PROXIMITY = 0x7FF5;
+
+        public const uint PK_NORMAL_PRESSURE = 0x0400;
+        public const uint CXO_MESSAGES = 0x0004;
+        public const uint CXO_SYSTEM   = 0x0001;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct LOGCONTEXT
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 40)]
+            public string lcName;
+            public uint lcOptions, lcStatus, lcLocks, lcMsgBase, lcDevice;
+            public uint lcPktRate, lcPktData, lcPktMode, lcMoveMask;
+            public uint lcBtnDnMask, lcBtnUpMask;
+            public int lcInOrgX, lcInOrgY, lcInOrgZ;
+            public int lcInExtX, lcInExtY, lcInExtZ;
+            public int lcOutOrgX, lcOutOrgY, lcOutOrgZ;
+            public int lcOutExtX, lcOutExtY, lcOutExtZ;
+            public int lcSensX, lcSensY, lcSensZ;
+            public int lcSysMode, lcSysOrgX, lcSysOrgY;
+            public int lcSysExtX, lcSysExtY, lcSysSensX, lcSysSensY;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PACKET { public int pkNormalPressure; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct AXIS
+        {
+            public int axMin, axMax;
+            public uint axUnits;
+            public float axResolution;
+        }
+```
+
+### 1.2 P/Invoke
+
+```csharp
+        [DllImport("WinTab32.dll", SetLastError = true)]
+        private static extern IntPtr WTOpen(IntPtr hWnd, ref LOGCONTEXT lc, bool fEnable);
+
+        [DllImport("WinTab32.dll")]
+        private static extern bool WTClose(IntPtr hCtx);
+
+        [DllImport("WinTab32.dll")]
+        private static extern int WTPacket(IntPtr hCtx, uint wSerial, ref PACKET lpPkt);
+
+        [DllImport("WinTab32.dll")]
+        private static extern bool WTInfo(uint wCategory, uint nIndex, IntPtr lpOutput);
+
+        private const uint WTI_DEFCONTEXT = 3;
+        private const uint WTI_DEVICES    = 100;
+        private const uint DVC_NPRESSURE  = 15;
+```
+
+### 1.3 Управление контекстом
+
+```csharp
+        private static IntPtr _hCtx = IntPtr.Zero;
+        private static int    _maxPressure = 1023;
+        public  static bool   IsAvailable  = false;
+
+        public static bool Open(IntPtr hWnd)
+        {
+            try { WTInfo(0, 0, IntPtr.Zero); }
+            catch (DllNotFoundException) { return false; }
+
+            _maxPressure = ReadMaxPressure();
+
+            LOGCONTEXT lc = new LOGCONTEXT();
+            IntPtr lcPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LOGCONTEXT)));
+            try
+            {
+                WTInfo(WTI_DEFCONTEXT, 0, lcPtr);
+                lc = (LOGCONTEXT)Marshal.PtrToStructure(lcPtr, typeof(LOGCONTEXT));
+            }
+            finally { Marshal.FreeHGlobal(lcPtr); }
+
+            lc.lcOptions   = CXO_SYSTEM | CXO_MESSAGES;
+            lc.lcMsgBase   = WT_PACKET;
+            lc.lcPktData   = PK_NORMAL_PRESSURE;
+            lc.lcPktMode   = 0;
+            lc.lcMoveMask  = 0;
+            lc.lcBtnDnMask = 0;
+            lc.lcBtnUpMask = 0;
+            lc.lcName      = "gInk_pressure_ctx";
+
+            _hCtx = WTOpen(hWnd, ref lc, true);
+            IsAvailable = (_hCtx != IntPtr.Zero);
+            return IsAvailable;
+        }
+
+        public static void Close()
+        {
+            if (_hCtx != IntPtr.Zero)
+            {
+                WTClose(_hCtx);
+                _hCtx = IntPtr.Zero;
+                IsAvailable = false;
+            }
+        }
+
+        public static float ReadPressure(uint serial)
+        {
+            if (_hCtx == IntPtr.Zero) return -1f;
+            PACKET pkt = new PACKET();
+            int result = WTPacket(_hCtx, serial, ref pkt);
+            if (result == 0) return -1f;
+            return Math.Max(0f, Math.Min(1f, pkt.pkNormalPressure / (float)_maxPressure));
+        }
+
+        private static int ReadMaxPressure()
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(AXIS)));
+            try
+            {
+                WTInfo(WTI_DEVICES + 0, DVC_NPRESSURE, ptr);
+                AXIS ax = (AXIS)Marshal.PtrToStructure(ptr, typeof(AXIS));
+                return ax.axMax > 0 ? ax.axMax : 1023;
+            }
+            catch { return 1023; }
+            finally { Marshal.FreeHGlobal(ptr); }
+        }
+    }
+}
+```
+
+---
+
+## Фаза 2 — Root.cs: глобальное состояние давления
+
+```csharp
+// --- Pressure Sensitivity ---
+public static float CurrentPressure   = 0.5f;
+public static bool  PressureSensitivity = false;
+public static float PressureMinScale  = 0.2f;
+public static float PressureMaxScale  = 1.5f;
+
+/// <summary>
+/// Источник данных о давлении:
+///   0 = WinTab  (WinTab32.dll — Wacom/XP-Pen/Huion)
+///   1 = Microsoft.Ink NormalPressure (встроен в InkOverlay, без доп. драйверов)
+///   2 = Fixed   (всегда 0.5f — давление отключено, ширина постоянная)
+/// </summary>
+public static int PressureSource = 0;
+
+// Буфер давления текущего штриха
+public static List<float> CurrentStrokePressure = new List<float>();
+
+// Давление по завершённым штрихам. Ключ: Stroke.Id
+public static Dictionary<int, float[]> StrokePressureData
+    = new Dictionary<int, float[]>();
+```
+
+**ReadOptions():**
+```csharp
+PressureSensitivity = ReadBool("PressureSensitivity", false);
+PressureMinScale    = ReadFloat("PressureMinScale", 0.2f);
+PressureMaxScale    = ReadFloat("PressureMaxScale", 1.5f);
+PressureSource      = ReadInt("PressureSource", 0); // 0=WinTab, 1=Ink, 2=Fixed
+```
+
+**SaveOptions():**
+```csharp
+WriteValue("PressureSensitivity", PressureSensitivity ? "1" : "0");
+WriteValue("PressureMinScale",    PressureMinScale.ToString("F2"));
+WriteValue("PressureMaxScale",    PressureMaxScale.ToString("F2"));
+WriteValue("PressureSource",      PressureSource.ToString());
+```
+
+---
+
+## Фаза 3 — FormCollection.cs: интеграция WinTab
+
+### 3.1 Инициализация
+
+```csharp
+protected override void OnHandleCreated(EventArgs e)
+{
+    base.OnHandleCreated(e);
+    if (Root.PressureSensitivity && Root.PressureSource == 0)
+    {
+        if (!WinTabManager.Open(this.Handle))
+            Root.PressureSensitivity = false;
+    }
+}
+```
+
+### 3.2 Закрытие
+
+```csharp
+protected override void OnFormClosed(FormClosedEventArgs e)
+{
+    WinTabManager.Close();
+    base.OnFormClosed(e);
+}
+```
+
+### 3.3 WndProc
+
+```csharp
+protected override void WndProc(ref Message m)
+{
+    if (m.Msg == WinTabManager.WT_PACKET && Root.PressureSensitivity
+        && Root.PressureSource == 0)
+    {
+        uint serial = (uint)m.WParam.ToInt32();
+        float p = WinTabManager.ReadPressure(serial);
+        if (p >= 0f)
+            Root.CurrentPressure = ApplyPressureCurve(p);
+        return; // сообщение потреблено
+    }
+    if (m.Msg == WinTabManager.WT_PROXIMITY)
+    {
+        bool entering = (m.LParam.ToInt32() & 0xFFFF) != 0;
+        if (!entering) Root.CurrentPressure = 0.5f;
+    }
+    base.WndProc(ref m);
+}
+
+private float ApplyPressureCurve(float raw)
+{
+    return Root.PressureMinScale
+         + (Root.PressureMaxScale - Root.PressureMinScale) * raw;
+}
+```
+
+> [!NOTE]
+> `lcMoveMask = 0` — WM_WINTAB не генерируется при простом движении, только при нажатии.
+
+### 3.4 IC_MouseMove — выбор источника давления
+
+```csharp
+private void IC_MouseMove(object sender, CancelMouseEventArgs e)
+{
+    if (Root.PressureSensitivity)
+    {
+        switch (Root.PressureSource)
+        {
+            case 0: // WinTab — CurrentPressure уже обновлён из WndProc
+                if (!WinTabManager.IsAvailable)
+                    Root.CurrentPressure = 0.5f;
+                break;
+
+            case 1: // Microsoft.Ink NormalPressure
+                // Читаем из последнего пакета текущего штриха
+                int[] pkData = Root.IC.Ink.Strokes[Root.IC.Ink.Strokes.Count - 1]
+                                   .GetPacketData(new int[]{}, PacketProperty.NormalPressure);
+                if (pkData != null && pkData.Length > 0)
+                {
+                    float raw = pkData[pkData.Length - 1] / 1023f;
+                    Root.CurrentPressure = ApplyPressureCurve(
+                        Math.Max(0f, Math.Min(1f, raw)));
+                }
+                break;
+
+            case 2: // Fixed
+            default:
+                Root.CurrentPressure = 0.5f;
+                break;
+        }
+    }
+    else
+    {
+        Root.CurrentPressure = 0.5f;
+    }
+
+    // Записать в буфер давления текущего штриха
+    if (Root.PressureSensitivity)
+        Root.CurrentStrokePressure.Add(Root.CurrentPressure);
+
+    // ... существующий код IC_MouseMove ...
+}
+```
+
+> [!NOTE]
+> При `PressureSource = 1` WinTab не открывается совсем — нет конфликтов на Surface/WM_POINTER планшетах.
+
+---
+
+## Фаза 4 — Буфер давления для завершённых штрихов
+
+**IC_Stroke:**
+```csharp
+private void IC_Stroke(object sender, InkCollectorStrokeEventArgs e)
+{
+    if (Root.PressureSensitivity && Root.CurrentStrokePressure.Count > 0)
+    {
+        Root.StrokePressureData[e.Stroke.Id] =
+            Root.CurrentStrokePressure.ToArray();
+        Root.CurrentStrokePressure.Clear();
+    }
+    else if (Root.PressureSensitivity)
+    {
+        int pts = e.Stroke.PacketCount;
+        float[] neutral = new float[pts];
+        for (int i = 0; i < pts; i++) neutral[i] = 0.5f;
+        Root.StrokePressureData[e.Stroke.Id] = neutral;
+    }
+    // ... существующий код ...
+}
+```
+
+**Очистка при Undo/Clear:**
+```csharp
+Root.StrokePressureData.Remove(removedStroke.Id);
+```
+
+---
+
+## Фаза 5 — FormDisplay.cs: посегментный рендеринг
+
+```csharp
+private float GetPressureWidth(int strokeId, int pointIndex, int totalPoints)
+{
+    float baseWidth = Root.GlobalPenWidth * DpiScale / 26.458f;
+    if (!Root.PressureSensitivity) return baseWidth;
+
+    float[] pressures;
+    if (!Root.StrokePressureData.TryGetValue(strokeId, out pressures))
+        return baseWidth;
+
+    float t = totalPoints > 1
+        ? (float)pointIndex / (totalPoints - 1) * (pressures.Length - 1) : 0;
+    int lo = (int)t;
+    int hi = Math.Min(lo + 1, pressures.Length - 1);
+    float pressure = pressures[lo] * (1 - (t - lo)) + pressures[hi] * (t - lo);
+    return baseWidth * pressure;
+}
+
+private void DrawStrokeWithPressure(Graphics g, Stroke stroke)
+{
+    int count = stroke.PacketCount;
+    if (count < 2) return;
+
+    Point[] pts = stroke.GetPoints();
+    PointF[] pixPts = new PointF[count];
+    for (int i = 0; i < count; i++)
+    {
+        Point p = pts[i];
+        IC.Renderer.InkSpaceToPixel(g, ref p);
+        pixPts[i] = new PointF(p.X, p.Y);
+    }
+
+    Color col = stroke.DrawingAttributes.Color;
+    for (int i = 0; i < count - 1; i++)
+    {
+        float w = Math.Max(0.5f,
+            (GetPressureWidth(stroke.Id, i, count) +
+             GetPressureWidth(stroke.Id, i + 1, count)) / 2f);
+        using (Pen pen = new Pen(col, w))
+        {
+            pen.StartCap = pen.EndCap = LineCap.Round;
+            pen.LineJoin = LineJoin.Round;
+            g.DrawLine(pen, pixPts[i], pixPts[i + 1]);
+        }
+    }
+}
+```
+
+> [!WARNING]
+> `new Pen(...)` в цикле — дорого при 500+ точках. Оптимизация: пул перьев `Dictionary<float, Pen>` с округлением ширины до 0.5px.
+
+---
+
+## Фаза 6 — FormOptions.cs: UI настройки
+
+### Элементы группы "Pressure Sensitivity"
+
+| Элемент | Тип | Назначение |
+|---|---|---|
+| `chkPressure` | CheckBox | Вкл/выкл давление |
+| `cmbPressureSource` | ComboBox | Источник: WinTab / Microsoft.Ink / Fixed |
+| `lblPressureStatus` | Label | Статус источника (✓/✗ с цветом) |
+| `numMinScale` | NumericUpDown | Мин. коэфф. ширины (0.0–1.0) |
+| `numMaxScale` | NumericUpDown | Макс. коэфф. ширины (1.0–3.0) |
+| `pbPressureTest` | ProgressBar | Live-тест: текущее `Root.CurrentPressure` (0–100%) |
+| `lblPressureTest` | Label | Подпись "Давление: X% (прижмите перо)" |
+| `_pressureTimer` | Timer | Обновляет `pbPressureTest` каждые 50 мс |
+
+### 6.1 ComboBox источника давления
+
+Элементы `cmbPressureSource` (индекс = `Root.PressureSource`):
+- `0` → `"WinTab (Wacom / XP-Pen / Huion)"`
+- `1` → `"Microsoft.Ink NormalPressure (встроен)"`
+- `2` → `"Фиксированное (давление отключено)"`
+
+```csharp
+private void FormOptions_Load(object sender, EventArgs e)
+{
+    // ... существующий код ...
+    chkPressure.Checked             = Root.PressureSensitivity;
+    cmbPressureSource.SelectedIndex = Root.PressureSource;
+    numMinScale.Value = (decimal)Root.PressureMinScale;
+    numMaxScale.Value = (decimal)Root.PressureMaxScale;
+
+    UpdatePressureControlsEnabled();
+    UpdatePressureSourceStatus();
+
+    _pressureTimer = new Timer { Interval = 50 }; // 20 fps
+    _pressureTimer.Tick += PressureTimer_Tick;
+    _pressureTimer.Start();
+}
+
+private void chkPressure_CheckedChanged(object sender, EventArgs e)
+{
+    Root.PressureSensitivity = chkPressure.Checked;
+    UpdatePressureControlsEnabled();
+    if (chkPressure.Checked) UpdatePressureSourceStatus();
+}
+
+private void cmbPressureSource_SelectedIndexChanged(object sender, EventArgs e)
+{
+    Root.PressureSource = cmbPressureSource.SelectedIndex;
+    UpdatePressureSourceStatus();
+}
+
+private void UpdatePressureControlsEnabled()
+{
+    bool on = chkPressure.Checked;
+    cmbPressureSource.Enabled = on;
+    numMinScale.Enabled       = on;
+    numMaxScale.Enabled       = on;
+    pbPressureTest.Enabled    = on;
+    lblPressureTest.Enabled   = on;
+}
+
+private void UpdatePressureSourceStatus()
+{
+    switch (Root.PressureSource)
+    {
+        case 0: // WinTab
+            if (!WinTabManager.IsAvailable)
+            {
+                bool ok = WinTabManager.Open(Root.mainForm.Handle);
+                lblPressureStatus.Text      = ok
+                    ? "WinTab: ✓ подключен"
+                    : "WinTab: ✗ драйвер не найден (нет планшета?)";
+                lblPressureStatus.ForeColor = ok ? Color.Green : Color.Red;
+            }
+            else
+            {
+                lblPressureStatus.Text      = "WinTab: ✓ подключен";
+                lblPressureStatus.ForeColor = Color.Green;
+            }
+            break;
+
+        case 1: // Microsoft.Ink
+            WinTabManager.Close(); // не нужен — освобождаем
+            lblPressureStatus.Text      = "Microsoft.Ink: ✓ встроен";
+            lblPressureStatus.ForeColor = Color.Green;
+            break;
+
+        case 2: // Fixed
+            WinTabManager.Close();
+            lblPressureStatus.Text      = "Давление фиксировано (0.5)";
+            lblPressureStatus.ForeColor = Color.Gray;
+            break;
+    }
+}
+```
+
+### 6.2 Прогрессбар тестирования давления
+
+Позволяет прижать перо прямо в открытом окне настроек и убедиться, что давление читается корректно.
+
+```csharp
+private Timer _pressureTimer;
+
+private void PressureTimer_Tick(object sender, EventArgs e)
+{
+    if (!Root.PressureSensitivity) return;
+
+    // Нормализуем CurrentPressure (множитель) → 0..100%
+    float displayVal = Root.CurrentPressure / Root.PressureMaxScale;
+    int percent = (int)Math.Round(Math.Max(0f, Math.Min(1f, displayVal)) * 100f);
+
+    pbPressureTest.Value = percent;
+    lblPressureTest.Text = $"Давление: {percent}%  (прижмите перо для проверки)";
+}
+
+protected override void OnFormClosed(FormClosedEventArgs e)
+{
+    _pressureTimer?.Stop();
+    _pressureTimer?.Dispose();
+    base.OnFormClosed(e);
+}
+```
+
+> [!IMPORTANT]
+> При источнике **WinTab** прогрессбар обновляется только когда перо в зоне планшета — WM_WINTAB приходит в `FormCollection.WndProc`, а не в `FormOptions`. `Root.CurrentPressure` — общий static float, доступный из любого потока (float атомарен на x86).
+
+> [!TIP]
+> Рекомендуется стилизовать `pbPressureTest` с `Style = Continuous` и зелёным цветом для наглядности.
+
+---
+
+## Фаза 7 — gInk.csproj
+
+```xml
+<Compile Include="src\WinTabManager.cs" />
+```
+
+---
+
+## Roadmap
+
+```mermaid
+gantt
+    title WinTab Implementation Roadmap
+    dateFormat  YYYY-MM-DD
+    section Фаза 1
+    WinTabManager.cs (P/Invoke)                          :f1, 2026-07-05, 2d
+    section Фаза 2
+    Root.cs (PressureSource + буфер)                     :f2, after f1, 1d
+    section Фаза 3
+    FormCollection (WndProc + IC_MouseMove по источнику) :f3, after f2, 1d
+    section Фаза 4
+    Буфер IC_MouseMove + IC_Stroke                       :f4, after f3, 1d
+    section Фаза 5
+    DrawStrokes посегментный рендеринг                   :f5, after f4, 3d
+    section Фаза 6
+    FormOptions: ComboBox источника + ProgressBar тест   :f6, after f5, 1d
+    section Тест
+    Тест все 3 источника + fallback мышь                 :f7, after f6, 1d
+```
+
+**Итого: ~10–11 рабочих дней**
+
+---
+
+## Ключевые риски
+
+| Риск | Решение |
+|---|---|
+| `WinTab32.dll` отсутствует | `try/catch DllNotFoundException` → `IsAvailable=false` |
+| Конфликт WinTab и InkOverlay | `lcMoveMask=0`, `PK_NORMAL_PRESSURE` only, `CXO_SYSTEM` |
+| Десинхрон WinTab и Ink пакетов | Буфер `CurrentStrokePressure` + интерполяция в `GetPressureWidth` |
+| Утечка Pen в цикле | `using(Pen pen=...)` или пул перьев |
+| Память `StrokePressureData` | Очищать при `ClearStrokes` и `Undo` |
+| Surface Pro (WM_POINTER, нет WinTab) | Переключить на `PressureSource=1` (Microsoft.Ink) |
+
+---
+
+## Тестовый чеклист
+
+### Общее
+- [ ] Нет планшета: приложение запускается, `PressureSensitivity` не ломается
+- [ ] Undo удаляет штрих + его данные из `StrokePressureData`
+- [ ] Clear очищает весь `StrokePressureData`
+- [ ] Мышь: линия с нейтральным `0.5f`
+- [ ] Shift (прямая линия): посегментный рендеринг совместим
+- [ ] Многомониторная конфигурация: рендеринг без смещений
+- [ ] 500+ точек в штрихе без лагов
+
+### PressureSource = 0 (WinTab)
+- [ ] Статус "✓ подключен" в `FormOptions` при наличии планшета
+- [ ] **ProgressBar** реагирует на нажатие пера в реальном времени (0–100%)
+- [ ] Лёгкое нажатие → тонкая линия, сильное → толстая
+- [ ] Смена на другой источник → `WinTabManager.Close()` вызван
+
+### PressureSource = 1 (Microsoft.Ink)
+- [ ] `WinTab32.dll` не загружается вообще
+- [ ] NormalPressure из Ink-пакетов нормализован в [0..1]
+- [ ] ProgressBar обновляется через `_pressureTimer`
+- [ ] Давление влияет на ширину штриха
+
+### PressureSource = 2 (Fixed)
+- [ ] ProgressBar показывает ~50% постоянно
+- [ ] Все линии одинаковой ширины
+- [ ] WinTab не открывается
+
+### UI FormOptions
+- [ ] `cmbPressureSource` неактивен когда `chkPressure` снят
+- [ ] Переключение источника обновляет `lblPressureStatus` мгновенно
+- [ ] `_pressureTimer` останавливается при закрытии `FormOptions` (нет утечки)

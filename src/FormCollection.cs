@@ -28,6 +28,8 @@ namespace gInk
 		public Bitmap image_visible_not, image_visible;
 		public System.Windows.Forms.Cursor cursorred, cursorsnap;
 		public System.Windows.Forms.Cursor cursortip;
+		public Stroke ActiveMovingStroke = null;
+		public Stroke ActiveHoveredStroke = null;
 
 		public int ButtonsEntering = 0;  // -1 = exiting
 		public int gpButtonsLeft, gpButtonsTop, gpButtonsWidth, gpButtonsHeight; // the default location, fixed
@@ -655,6 +657,22 @@ namespace gInk
 			LasteXY.X = e.X;
 			LasteXY.Y = e.Y;
 			IC.Renderer.PixelToInkSpace(Root.FormDisplay.gOneStrokeCanvus, ref LasteXY);
+
+			if (Root.PanMode)
+			{
+				float hitRadius = 300.0f;
+				using (Strokes hitStrokes = IC.Ink.HitTest(LasteXY, hitRadius))
+				{
+					if (hitStrokes != null && hitStrokes.Count > 0)
+					{
+						ActiveMovingStroke = hitStrokes[0];
+					}
+					else
+					{
+						ActiveMovingStroke = null;
+					}
+				}
+			}
 		}
 
 		public Point LasteXY;
@@ -682,7 +700,30 @@ namespace gInk
 			}
 			else if (Root.PanMode && Root.FingerInAction)
 			{
-				Root.Pan(currentxy.X - LasteXY.X, currentxy.Y - LasteXY.Y);			
+				int dx = currentxy.X - LasteXY.X;
+				int dy = currentxy.Y - LasteXY.Y;
+				if (dx != 0 || dy != 0)
+				{
+					if (Root.MoveEachStrokeSeparately && ActiveMovingStroke != null)
+					{
+						try
+						{
+							ActiveMovingStroke.Move(dx, dy);
+						}
+						catch
+						{
+						}
+
+						Root.FormDisplay.ClearCanvus();
+						Root.FormDisplay.DrawStrokes();
+						Root.FormDisplay.DrawButtons(true);
+						Root.FormDisplay.UpdateFormDisplay(true);
+					}
+					else
+					{
+						Root.Pan(dx, dy);
+					}
+				}
 			}
 
 			LasteXY = currentxy;
@@ -711,6 +752,7 @@ namespace gInk
 			else if (Root.PanMode)
 			{
 				SaveUndoStrokes();
+				ActiveMovingStroke = null;
 			}
 			else
 			{
@@ -814,6 +856,7 @@ namespace gInk
 
 		public void SelectPen(int pen)
 		{
+			ActiveMovingStroke = null;
 			// -3=pan, -2=pointer, -1=erasor, 0+=pens
 			if (pen == -3)
 			{

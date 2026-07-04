@@ -1,6 +1,8 @@
 
 v1.3.0 (Jul. 4, 2026)
 =================
+- Add support for moving individual strokes separately in Pan mode instead of moving all strokes together.
+- Add a General Options checkbox to toggle between individual stroke movement and full-canvas panning, with configuration persistence in config.ini.
 - Upgrade target framework version to .NET Framework 4.7.2 for improved compatibility under modern Windows 10/11.
 - Add an automated build script (build.bat) to simplify compilations using MSBuild.
 - Enable High-DPI support (HiDPI) with PerMonitorV2 awareness for sharp rendering on high-resolution displays.

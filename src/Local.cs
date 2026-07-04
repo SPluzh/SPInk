@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,6 +41,7 @@ namespace gInk
 		public string OptionsGeneralSnapshotsavepath = "Snapshot save path";
 		public string OptionsGeneralWhitetrayicon = "Use white tray icon";
 		public string OptionsGeneralAllowdragging = "Allow dragging toolbar";
+		public string OptionsGeneralMoveEachStrokeSeparately = "Move each stroke separately";
 		public string OptionsGeneralNotePenwidth = "Note: pen width panel overides each individual pen width settings";
 
 		public string OptionsPensShow = "Show";
