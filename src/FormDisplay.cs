@@ -233,7 +233,48 @@ namespace gInk
 		public void DrawStrokes(Graphics g)
 		{
 			if (Root.InkVisible)
+			{
 				Root.FormCollection.IC.Renderer.Draw(g, Root.FormCollection.IC.Ink.Strokes);
+
+				foreach (Stroke stroke in Root.FormCollection.IC.Ink.Strokes)
+				{
+					if (!stroke.Deleted && stroke.ExtendedProperties.Contains(Root.RulerTextGuid))
+					{
+						string text = stroke.ExtendedProperties[Root.RulerTextGuid].Data as string;
+						if (!string.IsNullOrEmpty(text) && stroke.PacketCount > 1)
+						{
+							Point p0 = stroke.GetPoint(0);
+							Point pN = stroke.GetPoint(stroke.PacketCount - 1);
+
+							Root.FormCollection.IC.Renderer.InkSpaceToPixel(g, ref p0);
+							Root.FormCollection.IC.Renderer.InkSpaceToPixel(g, ref pN);
+
+							using (Font font = new Font("Segoe UI", 12f, FontStyle.Bold))
+							{
+								SizeF textSize = g.MeasureString(text, font);
+								PointF textPt = new PointF((p0.X + pN.X) / 2f - textSize.Width / 2f, (p0.Y + pN.Y) / 2f - textSize.Height - 10f);
+
+								if (textPt.X < 0) textPt.X = 10f;
+								if (textPt.Y < 0) textPt.Y = p0.Y + 10f;
+
+								var oldMode = g.CompositingMode;
+								g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+
+								using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
+								{
+									g.FillRectangle(bgBrush, textPt.X - 5, textPt.Y - 2, textSize.Width + 10, textSize.Height + 4);
+								}
+								using (SolidBrush textBrush = new SolidBrush(Color.White))
+								{
+									g.DrawString(text, font, textBrush, textPt);
+								}
+
+								g.CompositingMode = oldMode;
+							}
+						}
+					}
+				}
+			}
 		}
 
 		public void MoveStrokes(int dy)
@@ -618,7 +659,19 @@ namespace gInk
 						bool shiftPressed = Control.ModifierKeys.HasFlag(Keys.Shift);
 						bool ctrlPressed = Control.ModifierKeys.HasFlag(Keys.Control);
 
-						if ((shiftPressed || ctrlPressed) && stroke.PacketCount > 1)
+						if (Root.CurrentPen == -4 || Root.CurrentPen == -5)
+						{
+							lt.X -= 100;
+							lt.Y -= 100;
+							rb.X += 100;
+							rb.Y += 100;
+							lt.X = Math.Max(0, lt.X);
+							lt.Y = Math.Max(0, lt.Y);
+							rb.X = Math.Min(this.Width, rb.X);
+							rb.Y = Math.Min(this.Height, rb.Y);
+						}
+
+						if ((shiftPressed || ctrlPressed || Root.CurrentPen == -4 || Root.CurrentPen == -5) && stroke.PacketCount > 1)
 						{
 							Point p0 = stroke.GetPoint(0);
 							Point pN = stroke.GetPoint(stroke.PacketCount - 1);
@@ -653,6 +706,9 @@ namespace gInk
 
 							var oldMode = gCanvus.CompositingMode;
 							gCanvus.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+							var oldSmoothing = gCanvus.SmoothingMode;
+							gCanvus.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
 							using (Pen gdiPen = new Pen(penColor, pixelWidth))
 							{
 								gdiPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
@@ -661,6 +717,100 @@ namespace gInk
 								gdiPen.Alignment = System.Drawing.Drawing2D.PenAlignment.Center;
 								gCanvus.DrawLine(gdiPen, p0, pN);
 							}
+
+							if (Root.CurrentPen == -4)
+							{
+								float endRadius = (float)Math.Max(pixelWidth * 0.7, 4.0);
+								float midRadius = (float)Math.Max(pixelWidth * 0.5, 3.0);
+
+								using (SolidBrush endBrush = new SolidBrush(penColor))
+								{
+									gCanvus.FillEllipse(endBrush, p0.X - endRadius, p0.Y - endRadius, endRadius * 2, endRadius * 2);
+									gCanvus.FillEllipse(endBrush, pN.X - endRadius, pN.Y - endRadius, endRadius * 2, endRadius * 2);
+								}
+
+								Color midColor = Color.Gold;
+								using (SolidBrush midBrush = new SolidBrush(midColor))
+								{
+									int divisions = Root.SegmentDivisions;
+									for (int i = 1; i < divisions; i++)
+									{
+										float t = (float)i / divisions;
+										float mx = p0.X + t * (pN.X - p0.X);
+										float my = p0.Y + t * (pN.Y - p0.Y);
+										gCanvus.FillEllipse(midBrush, mx - midRadius, my - midRadius, midRadius * 2, midRadius * 2);
+									}
+								}
+							}
+							else if (Root.CurrentPen == -5)
+							{
+								float crossSize = (float)Math.Max(pixelWidth * 2f, 10.0f);
+								Color crossColor = penColor;
+								Color tickColor = Color.Gold;
+
+								DrawGDICross(gCanvus, p0, crossColor, pixelWidth, crossSize);
+
+								double strokeLen = Math.Sqrt(Math.Pow(pN.X - p0.X, 2) + Math.Pow(pN.Y - p0.Y, 2));
+
+								string text = "";
+								if (!Root.RulerHasBase)
+								{
+									text = Root.Local.RulerSetBase;
+									DrawGDICross(gCanvus, pN, crossColor, pixelWidth, crossSize);
+								}
+								else
+								{
+									DrawGDICross(gCanvus, pN, crossColor, pixelWidth, crossSize);
+
+									double inkLen = Math.Sqrt(Math.Pow(stroke.GetPoint(stroke.PacketCount - 1).X - stroke.GetPoint(0).X, 2) + 
+															  Math.Pow(stroke.GetPoint(stroke.PacketCount - 1).Y - stroke.GetPoint(0).Y, 2));
+									double inkToPixel = inkLen > 0.01 ? strokeLen / inkLen : 1.0;
+									double baseLenPixels = Root.RulerBaseLength * inkToPixel;
+
+									if (baseLenPixels > 0.01)
+									{
+										double ratio = strokeLen / baseLenPixels;
+										int fullSegments = (int)Math.Floor(ratio);
+										double dx = pN.X - p0.X;
+										double dy = pN.Y - p0.Y;
+
+										for (int i = 1; i <= fullSegments; i++)
+										{
+											double t = i / ratio;
+											PointF midPt = new PointF((float)(p0.X + t * dx), (float)(p0.Y + t * dy));
+											DrawGDICross(gCanvus, midPt, tickColor, pixelWidth * 0.8f, crossSize * 0.8f);
+										}
+										text = string.Format("{0:0.##} x", ratio);
+									}
+									else
+									{
+										text = "0 x";
+									}
+								}
+
+								if (!string.IsNullOrEmpty(text))
+								{
+									using (Font font = new Font("Segoe UI", 12f, FontStyle.Bold))
+									{
+										SizeF textSize = gCanvus.MeasureString(text, font);
+										PointF textPt = new PointF((p0.X + pN.X) / 2f - textSize.Width / 2f, (p0.Y + pN.Y) / 2f - textSize.Height - 10f);
+
+										if (textPt.X < 0) textPt.X = 10f;
+										if (textPt.Y < 0) textPt.Y = p0.Y + 10f;
+
+										using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
+										{
+											gCanvus.FillRectangle(bgBrush, textPt.X - 5, textPt.Y - 2, textSize.Width + 10, textSize.Height + 4);
+										}
+										using (SolidBrush textBrush = new SolidBrush(Color.White))
+										{
+											gCanvus.DrawString(text, font, textBrush, textPt);
+										}
+									}
+								}
+							}
+
+							gCanvus.SmoothingMode = oldSmoothing;
 							gCanvus.CompositingMode = oldMode;
 						}
 						else
@@ -722,6 +872,15 @@ namespace gInk
 					UpdateFormDisplay(true);
 					stackmove = 0;
 				}
+			}
+		}
+
+		private void DrawGDICross(Graphics g, PointF pt, Color color, float width, float size)
+		{
+			using (Pen p = new Pen(color, width))
+			{
+				g.DrawLine(p, pt.X - size, pt.Y, pt.X + size, pt.Y);
+				g.DrawLine(p, pt.X, pt.Y - size, pt.X, pt.Y + size);
 			}
 		}
 

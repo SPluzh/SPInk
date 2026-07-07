@@ -104,6 +104,18 @@ namespace gInk
 		public bool PanMode = false;
 		public bool InkVisible = true;
 
+		public bool SegmentMode = false;
+		public int SegmentDivisions = 2;
+		public bool SegmentEnabled = true;
+
+		public bool RulerEnabled = true;
+		public bool RulerMode = false;
+		public double RulerBaseLength = 0;
+		public Point RulerBaseStart = new Point(0, 0);
+		public Point RulerBaseEnd = new Point(0, 0);
+		public bool RulerHasBase = false;
+		public static readonly Guid RulerTextGuid = new Guid("A7C38B29-4F8A-4D78-9C21-BD3FE725890C");
+
 		public Ink[] UndoStrokes;
 		//public Ink UponUndoStrokes;
 		public int UndoP;
@@ -438,6 +450,9 @@ namespace gInk
 			AutoScroll = false;
 			WhiteTrayIcon = false;
 			SnapshotBasePath = "%USERPROFILE%/Pictures/gInk/";
+			SegmentEnabled = true;
+			SegmentDivisions = 2;
+			RulerEnabled = true;
 		}
 
 		public void SetTrayIconColor()
@@ -631,6 +646,22 @@ namespace gInk
 						case "PAN_ICON":
 							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
 								PanEnabled = false;
+							break;
+						case "SEGMENT_ICON":
+							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
+								SegmentEnabled = false;
+							else
+								SegmentEnabled = true;
+							break;
+						case "RULER_ICON":
+							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
+								RulerEnabled = false;
+							else
+								RulerEnabled = true;
+							break;
+						case "SEGMENT_DIVISIONS":
+							if (int.TryParse(sPara, out tempi) && tempi >= 2 && tempi <= 6)
+								SegmentDivisions = tempi;
 							break;
 						case "MOVE_EACH_STROKE_SEPARATELY":
 							if (sPara.ToUpper() == "FALSE" || sPara == "0" || sPara.ToUpper() == "OFF")
@@ -848,6 +879,21 @@ namespace gInk
 								sPara = "True";
 							else
 								sPara = "False";
+							break;
+						case "SEGMENT_ICON":
+							if (SegmentEnabled)
+								sPara = "True";
+							else
+								sPara = "False";
+							break;
+						case "RULER_ICON":
+							if (RulerEnabled)
+								sPara = "True";
+							else
+								sPara = "False";
+							break;
+						case "SEGMENT_DIVISIONS":
+							sPara = SegmentDivisions.ToString();
 							break;
 						case "MOVE_EACH_STROKE_SEPARATELY":
 							if (MoveEachStrokeSeparately)

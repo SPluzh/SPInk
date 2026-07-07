@@ -26,6 +26,8 @@ namespace gInk
 		public Bitmap image_eraser_act, image_eraser;
 		public Bitmap image_pan_act, image_pan;
 		public Bitmap image_visible_not, image_visible;
+		public Bitmap image_segment_act, image_segment;
+		public Bitmap image_ruler_act, image_ruler;
 		public System.Windows.Forms.Cursor cursorred, cursorsnap;
 		public System.Windows.Forms.Cursor cursortip;
 		public Stroke ActiveMovingStroke = null;
@@ -85,6 +87,12 @@ namespace gInk
 			btPointer.Height = (int)(gpButtons.Height * 0.88);
 			btPointer.Width = btPointer.Height;
 			btPointer.Top = (int)(gpButtons.Height * 0.07);
+			btSegment.Height = (int)(gpButtons.Height * 0.88);
+			btSegment.Width = btSegment.Height;
+			btSegment.Top = (int)(gpButtons.Height * 0.07);
+			btRuler.Height = (int)(gpButtons.Height * 0.88);
+			btRuler.Width = btRuler.Height;
+			btRuler.Top = (int)(gpButtons.Height * 0.07);
 			btSnap.Height = (int)(gpButtons.Height * 0.88);
 			btSnap.Width = btSnap.Height;
 			btSnap.Top = (int)(gpButtons.Height * 0.07);
@@ -165,6 +173,26 @@ namespace gInk
 			else
 			{
 				btPointer.Visible = false;
+			}
+			if (Root.SegmentEnabled)
+			{
+				btSegment.Visible = true;
+				btSegment.Left = cumulatedleft;
+				cumulatedleft += (int)(btSegment.Width * 1.1);
+			}
+			else
+			{
+				btSegment.Visible = false;
+			}
+			if (Root.RulerEnabled)
+			{
+				btRuler.Visible = true;
+				btRuler.Left = cumulatedleft;
+				cumulatedleft += (int)(btRuler.Width * 1.1);
+			}
+			else
+			{
+				btRuler.Visible = false;
 			}
 			cumulatedleft += (int)(btStop.Width * 0.8);
 			if (Root.PenWidthEnabled)
@@ -405,6 +433,60 @@ namespace gInk
 				}
 			}
 
+			image_segment_act = CreateSegmentIcon(btPan.Width, btPan.Height, true);
+			image_segment = CreateSegmentIcon(btPan.Width, btPan.Height, false);
+			btSegment.Image = image_segment;
+
+			image_ruler_act = CreateRulerIcon(btPan.Width, btPan.Height, true);
+			image_ruler = CreateRulerIcon(btPan.Width, btPan.Height, false);
+			btRuler.Image = image_ruler;
+
+			ContextMenuStrip cmsRuler = new ContextMenuStrip();
+			ToolStripMenuItem itemReset = new ToolStripMenuItem(Root.Local.RulerResetTip);
+			itemReset.Click += (sender, ev) => {
+				Root.RulerHasBase = false;
+				UpdateRulerTooltip();
+			};
+			cmsRuler.Items.Add(itemReset);
+
+			btRuler.MouseDown += (sender, ev) => {
+				if (ev.Button == MouseButtons.Right)
+				{
+					cmsRuler.Show(btRuler, ev.Location);
+				}
+			};
+
+			ContextMenuStrip cmsSegmentDivisions = new ContextMenuStrip();
+			for (int i = 2; i <= 6; i++)
+			{
+				ToolStripMenuItem item = new ToolStripMenuItem(string.Format(Root.Local.FormatSegmentDivisions, i));
+				item.Tag = i;
+				item.Click += (sender, ev) => {
+					ToolStripMenuItem clickedItem = (ToolStripMenuItem)sender;
+					int div = (int)clickedItem.Tag;
+					Root.SegmentDivisions = div;
+					UpdateSegmentTooltip();
+					foreach (ToolStripMenuItem tsItem in cmsSegmentDivisions.Items)
+					{
+						tsItem.Checked = (tsItem == clickedItem);
+					}
+				};
+				if (i == Root.SegmentDivisions)
+					item.Checked = true;
+				cmsSegmentDivisions.Items.Add(item);
+			}
+			
+			btSegment.MouseDown += (sender, ev) => {
+				if (ev.Button == MouseButtons.Right)
+				{
+					foreach (ToolStripMenuItem tsItem in cmsSegmentDivisions.Items)
+					{
+						tsItem.Checked = ((int)tsItem.Tag == Root.SegmentDivisions);
+					}
+					cmsSegmentDivisions.Show(btSegment, ev.Location);
+				}
+			};
+
 			LastTickTime = DateTime.Parse("1987-01-01");
 			tiSlide.Enabled = true;
 
@@ -421,6 +503,8 @@ namespace gInk
 			this.toolTip.SetToolTip(this.btUndo, Root.Local.ButtonNameUndo + " (" + Root.Hotkey_Undo.ToString() + ")");
 			this.toolTip.SetToolTip(this.btClear, Root.Local.ButtonNameClear + " (" + Root.Hotkey_Clear.ToString() + ")");
 			this.toolTip.SetToolTip(this.btStop, Root.Local.ButtonNameExit + " (ESC)");
+			UpdateSegmentTooltip();
+			UpdateRulerTooltip();
 		}
 
 		public void ReloadButtons()
@@ -444,6 +528,12 @@ namespace gInk
 			btPointer.Height = (int)(gpButtons.Height * 0.88);
 			btPointer.Width = btPointer.Height;
 			btPointer.Top = (int)(gpButtons.Height * 0.07);
+			btSegment.Height = (int)(gpButtons.Height * 0.88);
+			btSegment.Width = btSegment.Height;
+			btSegment.Top = (int)(gpButtons.Height * 0.07);
+			btRuler.Height = (int)(gpButtons.Height * 0.88);
+			btRuler.Width = btRuler.Height;
+			btRuler.Top = (int)(gpButtons.Height * 0.07);
 			btSnap.Height = (int)(gpButtons.Height * 0.88);
 			btSnap.Width = btSnap.Height;
 			btSnap.Top = (int)(gpButtons.Height * 0.07);
@@ -519,6 +609,26 @@ namespace gInk
 			{
 				btPointer.Visible = false;
 			}
+			if (Root.SegmentEnabled)
+			{
+				btSegment.Visible = true;
+				btSegment.Left = cumulatedleft;
+				cumulatedleft += (int)(btSegment.Width * 1.1);
+			}
+			else
+			{
+				btSegment.Visible = false;
+			}
+			if (Root.RulerEnabled)
+			{
+				btRuler.Visible = true;
+				btRuler.Left = cumulatedleft;
+				cumulatedleft += (int)(btRuler.Width * 1.1);
+			}
+			else
+			{
+				btRuler.Visible = false;
+			}
 			cumulatedleft += (int)(btStop.Width * 0.8);
 			if (Root.PenWidthEnabled)
 			{
@@ -583,6 +693,7 @@ namespace gInk
 			this.toolTip.SetToolTip(this.btSnap, Root.Local.ButtonNameSnapshot + " (" + Root.Hotkey_Snap.ToString() + ")");
 			this.toolTip.SetToolTip(this.btUndo, Root.Local.ButtonNameUndo + " (" + Root.Hotkey_Undo.ToString() + ")");
 			this.toolTip.SetToolTip(this.btClear, Root.Local.ButtonNameClear + " (" + Root.Hotkey_Clear.ToString() + ")");
+			UpdateRulerTooltip();
 
 			Root.UponButtonsUpdate |= 0x2;
 		}
@@ -592,7 +703,77 @@ namespace gInk
 			bool shiftPressed = Control.ModifierKeys.HasFlag(Keys.Shift);
 			bool ctrlPressed = Control.ModifierKeys.HasFlag(Keys.Control);
 
-			if (shiftPressed || ctrlPressed)
+			if (Root.CurrentPen == -4)
+			{
+				Root.FormDisplay.StraightenStroke(e.Stroke);
+
+				Point p0 = e.Stroke.GetPoint(0);
+				Point pN = e.Stroke.GetPoint(e.Stroke.PacketCount - 1);
+
+				CreateDotStroke(p0, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency);
+				CreateDotStroke(pN, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency);
+
+				int divisions = Root.SegmentDivisions;
+				Color midColor = Color.Gold;
+				for (int i = 1; i < divisions; i++)
+				{
+					float t = (float)i / divisions;
+					int mx = (int)(p0.X + t * (pN.X - p0.X));
+					int my = (int)(p0.Y + t * (pN.Y - p0.Y));
+					CreateDotStroke(new Point(mx, my), midColor, (int)(e.Stroke.DrawingAttributes.Width * 0.8), e.Stroke.DrawingAttributes.Transparency);
+				}
+			}
+			else if (Root.CurrentPen == -5)
+			{
+				Root.FormDisplay.StraightenStroke(e.Stroke);
+
+				Point p0 = e.Stroke.GetPoint(0);
+				Point pN = e.Stroke.GetPoint(e.Stroke.PacketCount - 1);
+
+				double len = Math.Sqrt(Math.Pow(pN.X - p0.X, 2) + Math.Pow(pN.Y - p0.Y, 2));
+
+				float crossSize = (float)Math.Max(e.Stroke.DrawingAttributes.Width * 2f, 150f);
+				Color midColor = Color.Gold;
+
+				if (!Root.RulerHasBase)
+				{
+					Root.RulerBaseLength = len;
+					Root.RulerBaseStart = p0;
+					Root.RulerBaseEnd = pN;
+					Root.RulerHasBase = true;
+					UpdateRulerTooltip();
+
+					CreateCrossStroke(p0, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency, crossSize);
+					CreateCrossStroke(pN, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency, crossSize);
+
+					e.Stroke.ExtendedProperties.Add(Root.RulerTextGuid, "1 x");
+				}
+				else
+				{
+					CreateCrossStroke(p0, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency, crossSize);
+
+					if (Root.RulerBaseLength > 0.01)
+					{
+						double ratio = len / Root.RulerBaseLength;
+						int fullSegments = (int)Math.Floor(ratio);
+						double dx = pN.X - p0.X;
+						double dy = pN.Y - p0.Y;
+
+						for (int i = 1; i <= fullSegments; i++)
+						{
+							double t = i / ratio;
+							int mx = (int)(p0.X + t * dx);
+							int my = (int)(p0.Y + t * dy);
+							CreateCrossStroke(new Point(mx, my), midColor, (int)(e.Stroke.DrawingAttributes.Width * 0.8), e.Stroke.DrawingAttributes.Transparency, crossSize * 0.8f);
+						}
+
+						string text = string.Format("{0:0.##} x", ratio);
+						e.Stroke.ExtendedProperties.Add(Root.RulerTextGuid, text);
+					}
+					CreateCrossStroke(pN, e.Stroke.DrawingAttributes.Color, e.Stroke.DrawingAttributes.Width, e.Stroke.DrawingAttributes.Transparency, crossSize);
+				}
+			}
+			else if (shiftPressed || ctrlPressed)
 			{
 				if (ctrlPressed)
 				{
@@ -857,7 +1038,7 @@ namespace gInk
 		public void SelectPen(int pen)
 		{
 			ActiveMovingStroke = null;
-			// -3=pan, -2=pointer, -1=erasor, 0+=pens
+			// -4=segment, -3=pan, -2=pointer, -1=erasor, 0+=pens
 			if (pen == -3)
 			{
 				for (int b = 0; b < Root.MaxPenCount; b++)
@@ -865,9 +1046,12 @@ namespace gInk
 				btEraser.Image = image_eraser;
 				btPointer.Image = image_pointer;
 				btPan.Image = image_pan_act;
+				btSegment.Image = image_segment;
+				btRuler.Image = image_ruler;
 				EnterEraserMode(false);
 				Root.UnPointer();
 				Root.PanMode = true;
+				Root.RulerMode = false;
 
 				try
 				{
@@ -886,9 +1070,12 @@ namespace gInk
 				btEraser.Image = image_eraser;
 				btPointer.Image = image_pointer_act;
 				btPan.Image = image_pan;
+				btSegment.Image = image_segment;
+				btRuler.Image = image_ruler;
 				EnterEraserMode(false);
 				Root.Pointer();
 				Root.PanMode = false;
+				Root.RulerMode = false;
 			}
 			else if (pen == -1)
 			{
@@ -900,9 +1087,12 @@ namespace gInk
 				btEraser.Image = image_eraser_act;
 				btPointer.Image = image_pointer;
 				btPan.Image = image_pan;
+				btSegment.Image = image_segment;
+				btRuler.Image = image_ruler;
 				EnterEraserMode(true);
 				Root.UnPointer();
 				Root.PanMode = false;
+				Root.RulerMode = false;
 
 				if (Root.CanvasCursor == 0)
 				{
@@ -922,6 +1112,90 @@ namespace gInk
 					//IC.SetWindowInputRectangle(new Rectangle(0, 0, this.Width, this.Height));
 				}
 			}
+			else if (pen == -4)
+			{
+				if (this.Cursor != System.Windows.Forms.Cursors.Default)
+					this.Cursor = System.Windows.Forms.Cursors.Default;
+
+				if (Root.LastPen >= 0)
+				{
+					IC.DefaultDrawingAttributes = Root.PenAttr[Root.LastPen].Clone();
+					if (Root.PenWidthEnabled)
+					{
+						IC.DefaultDrawingAttributes.Width = Root.GlobalPenWidth;
+					}
+				}
+
+				for (int b = 0; b < Root.MaxPenCount; b++)
+					btPen[b].Image = image_pen[b];
+				btEraser.Image = image_eraser;
+				btPointer.Image = image_pointer;
+				btPan.Image = image_pan;
+				btSegment.Image = image_segment_act;
+				btRuler.Image = image_ruler;
+				EnterEraserMode(false);
+				Root.UnPointer();
+				Root.PanMode = false;
+				Root.RulerMode = false;
+
+				if (Root.CanvasCursor == 0)
+				{
+					cursorred = new System.Windows.Forms.Cursor(gInk.Properties.Resources.cursorred.Handle);
+					IC.Cursor = cursorred;
+				}
+				else if (Root.CanvasCursor == 1)
+					SetPenTipCursor();
+
+				try
+				{
+					IC.SetWindowInputRectangle(new Rectangle(0, 0, this.Width, this.Height));
+				}
+				catch
+				{
+				}
+			}
+			else if (pen == -5)
+			{
+				if (this.Cursor != System.Windows.Forms.Cursors.Default)
+					this.Cursor = System.Windows.Forms.Cursors.Default;
+
+				if (Root.LastPen >= 0)
+				{
+					IC.DefaultDrawingAttributes = Root.PenAttr[Root.LastPen].Clone();
+					if (Root.PenWidthEnabled)
+					{
+						IC.DefaultDrawingAttributes.Width = Root.GlobalPenWidth;
+					}
+				}
+
+				for (int b = 0; b < Root.MaxPenCount; b++)
+					btPen[b].Image = image_pen[b];
+				btEraser.Image = image_eraser;
+				btPointer.Image = image_pointer;
+				btPan.Image = image_pan;
+				btSegment.Image = image_segment;
+				btRuler.Image = image_ruler_act;
+				EnterEraserMode(false);
+				Root.UnPointer();
+				Root.PanMode = false;
+				Root.RulerMode = true;
+
+				if (Root.CanvasCursor == 0)
+				{
+					cursorred = new System.Windows.Forms.Cursor(gInk.Properties.Resources.cursorred.Handle);
+					IC.Cursor = cursorred;
+				}
+				else if (Root.CanvasCursor == 1)
+					SetPenTipCursor();
+
+				try
+				{
+					IC.SetWindowInputRectangle(new Rectangle(0, 0, this.Width, this.Height));
+				}
+				catch
+				{
+				}
+			}
 			else if (pen >= 0)
 			{
 				if (this.Cursor != System.Windows.Forms.Cursors.Default)
@@ -938,9 +1212,12 @@ namespace gInk
 				btEraser.Image = image_eraser;
 				btPointer.Image = image_pointer;
 				btPan.Image = image_pan;
+				btSegment.Image = image_segment;
+				btRuler.Image = image_ruler;
 				EnterEraserMode(false);
 				Root.UnPointer();
 				Root.PanMode = false;
+				Root.RulerMode = false;
 
 				if (Root.CanvasCursor == 0)
 				{
@@ -969,8 +1246,153 @@ namespace gInk
 			else
 				Root.UponButtonsUpdate |= 0x2;
 
-			if (pen != -2)
+			if (pen != -2 && pen != -4 && pen != -5)
 				Root.LastPen = pen;
+		}
+
+		private Bitmap CreateSegmentIcon(int width, int height, bool active)
+		{
+			Bitmap bmp = new Bitmap(width, height);
+			using (Graphics g = Graphics.FromImage(bmp))
+			{
+				g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+				g.Clear(Color.Transparent);
+				
+				Color lineColor = active ? Color.Red : Color.FromArgb(80, 80, 80);
+				Color midColor = active ? Color.Gold : Color.FromArgb(160, 160, 160);
+				
+				int padding = (int)(width * 0.2);
+				Point p1 = new Point(padding, height - padding);
+				Point p2 = new Point(width - padding, padding);
+				
+				using (Pen pen = new Pen(lineColor, 4))
+				{
+					g.DrawLine(pen, p1, p2);
+				}
+				
+				using (SolidBrush brush = new SolidBrush(lineColor))
+				{
+					g.FillEllipse(brush, p1.X - 5, p1.Y - 5, 10, 10);
+					g.FillEllipse(brush, p2.X - 5, p2.Y - 5, 10, 10);
+				}
+				
+				using (SolidBrush brush = new SolidBrush(midColor))
+				{
+					g.FillEllipse(brush, (p1.X + p2.X)/2 - 4, (p1.Y + p2.Y)/2 - 4, 8, 8);
+				}
+			}
+			return bmp;
+		}
+
+		private Bitmap CreateRulerIcon(int width, int height, bool active)
+		{
+			Bitmap bmp = new Bitmap(width, height);
+			using (Graphics g = Graphics.FromImage(bmp))
+			{
+				g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+				g.Clear(Color.Transparent);
+				
+				Color lineColor = active ? Color.Red : Color.FromArgb(80, 80, 80);
+				Color midColor = active ? Color.Gold : Color.FromArgb(160, 160, 160);
+				
+				int paddingX = (int)(width * 0.15);
+				int lineY = (int)(height * 0.6);
+				Point p1 = new Point(paddingX, lineY);
+				Point p2 = new Point(width - paddingX, lineY);
+				
+				using (Pen pen = new Pen(lineColor, 4))
+				{
+					g.DrawLine(pen, p1, p2);
+				}
+				
+				using (Pen pen = new Pen(lineColor, 3))
+				{
+					g.DrawLine(pen, p1.X, lineY - 8, p1.X, lineY + 8);
+					g.DrawLine(pen, p2.X, lineY - 8, p2.X, lineY + 8);
+				}
+				using (Pen pen = new Pen(midColor, 3))
+				{
+					int midX = (p1.X + p2.X) / 2;
+					g.DrawLine(pen, midX, lineY - 6, midX, lineY + 6);
+					
+					int q1X = (p1.X + midX) / 2;
+					int q3X = (midX + p2.X) / 2;
+					g.DrawLine(pen, q1X, lineY - 4, q1X, lineY + 4);
+					g.DrawLine(pen, q3X, lineY - 4, q3X, lineY + 4);
+				}
+			}
+			return bmp;
+		}
+
+		private void btRuler_Click(object sender, EventArgs e)
+		{
+			if (ToolbarMoved)
+			{
+				ToolbarMoved = false;
+				return;
+			}
+
+			SelectPen(-5);
+		}
+
+		private void btSegment_Click(object sender, EventArgs e)
+		{
+			if (ToolbarMoved)
+			{
+				ToolbarMoved = false;
+				return;
+			}
+
+			SelectPen(-4);
+		}
+
+		private void CreateDotStroke(Point pt, Color color, float width, byte transparency)
+		{
+			Point[] points = new Point[] { pt, new Point(pt.X + 1, pt.Y + 1) };
+			Stroke stroke = IC.Ink.CreateStroke(points);
+			
+			DrawingAttributes attr = IC.DefaultDrawingAttributes.Clone();
+			attr.Color = color;
+			attr.Width = (float)Math.Max(width * 1.2f, 80f);
+			attr.Transparency = transparency;
+			stroke.DrawingAttributes = attr;
+		}
+
+		private void CreateCrossStroke(Point pt, Color color, float width, byte transparency, float size)
+		{
+			Point[] pH = new Point[] { new Point(pt.X - (int)size, pt.Y), new Point(pt.X + (int)size, pt.Y) };
+			Point[] pV = new Point[] { new Point(pt.X, pt.Y - (int)size), new Point(pt.X, pt.Y + (int)size) };
+			
+			Stroke sH = IC.Ink.CreateStroke(pH);
+			DrawingAttributes attrH = IC.DefaultDrawingAttributes.Clone();
+			attrH.Color = color;
+			attrH.Width = width;
+			attrH.Transparency = transparency;
+			sH.DrawingAttributes = attrH;
+
+			Stroke sV = IC.Ink.CreateStroke(pV);
+			DrawingAttributes attrV = IC.DefaultDrawingAttributes.Clone();
+			attrV.Color = color;
+			attrV.Width = width;
+			attrV.Transparency = transparency;
+			sV.DrawingAttributes = attrV;
+		}
+
+		public void UpdateSegmentTooltip()
+		{
+			this.toolTip.SetToolTip(this.btSegment, Root.Local.ButtonNameSegment + " (" + string.Format(Root.Local.FormatSegmentDivisions, Root.SegmentDivisions) + ")");
+		}
+
+		public void UpdateRulerTooltip()
+		{
+			if (Root.RulerHasBase)
+			{
+				this.toolTip.SetToolTip(this.btRuler, Root.Local.ButtonNameRuler + " (" + Root.Local.RulerMeasure + ")");
+			}
+			else
+			{
+				this.toolTip.SetToolTip(this.btRuler, Root.Local.ButtonNameRuler + " (" + Root.Local.RulerSetBase + ")");
+			}
 		}
 
 		public void RetreatAndExit()

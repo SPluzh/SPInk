@@ -25,6 +25,12 @@ namespace gInk
 		public string ButtonNameClear = "Clear";
 		public string ButtonNameExit = "Exit drawing";
 		public string ButtonNameDock = "Dock";
+		public string ButtonNameSegment = "Segment divider";
+		public string FormatSegmentDivisions = "{0} parts";
+		public string ButtonNameRuler = "Segment ruler";
+		public string RulerSetBase = "Setting reference segment";
+		public string RulerMeasure = "Measuring";
+		public string RulerResetTip = "Right-click to reset reference";
 
 		public string MenuEntryExit = "Exit";
 		public string MenuEntryOptions = "Options";

@@ -40,6 +40,8 @@ namespace gInk
 			this.btStop = new System.Windows.Forms.Button();
 			this.btClear = new System.Windows.Forms.Button();
 			this.btUndo = new System.Windows.Forms.Button();
+			this.btSegment = new System.Windows.Forms.Button();
+			this.btRuler = new System.Windows.Forms.Button();
 			this.tiSlide = new System.Windows.Forms.Timer(this.components);
 			this.toolTip = new System.Windows.Forms.ToolTip(this.components);
 			this.gpPenWidth = new System.Windows.Forms.Panel();
@@ -62,6 +64,8 @@ namespace gInk
 			this.gpButtons.Controls.Add(this.btStop);
 			this.gpButtons.Controls.Add(this.btClear);
 			this.gpButtons.Controls.Add(this.btUndo);
+			this.gpButtons.Controls.Add(this.btSegment);
+			this.gpButtons.Controls.Add(this.btRuler);
 			this.gpButtons.Location = new System.Drawing.Point(36, 72);
 			this.gpButtons.Name = "gpButtons";
 			this.gpButtons.Size = new System.Drawing.Size(1242, 80);
@@ -263,6 +267,40 @@ namespace gInk
 			this.btUndo.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
 			this.btUndo.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
 			// 
+			// btSegment
+			// 
+			this.btSegment.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+			this.btSegment.FlatAppearance.BorderSize = 0;
+			this.btSegment.FlatAppearance.MouseDownBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btSegment.FlatAppearance.MouseOverBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btSegment.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.btSegment.Location = new System.Drawing.Point(0, 0);
+			this.btSegment.Name = "btSegment";
+			this.btSegment.Size = new System.Drawing.Size(69, 69);
+			this.btSegment.TabIndex = 4;
+			this.toolTip.SetToolTip(this.btSegment, "Segment tool");
+			this.btSegment.UseVisualStyleBackColor = true;
+			this.btSegment.Click += new System.EventHandler(this.btSegment_Click);
+			this.btSegment.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
+			this.btSegment.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
+			// 
+			// btRuler
+			// 
+			this.btRuler.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+			this.btRuler.FlatAppearance.BorderSize = 0;
+			this.btRuler.FlatAppearance.MouseDownBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btRuler.FlatAppearance.MouseOverBackColor = System.Drawing.Color.WhiteSmoke;
+			this.btRuler.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+			this.btRuler.Location = new System.Drawing.Point(0, 0);
+			this.btRuler.Name = "btRuler";
+			this.btRuler.Size = new System.Drawing.Size(69, 69);
+			this.btRuler.TabIndex = 5;
+			this.toolTip.SetToolTip(this.btRuler, "Segment ruler");
+			this.btRuler.UseVisualStyleBackColor = true;
+			this.btRuler.Click += new System.EventHandler(this.btRuler_Click);
+			this.btRuler.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseMove);
+			this.btRuler.MouseUp += new System.Windows.Forms.MouseEventHandler(this.gpButtons_MouseUp);
+			// 
 			// tiSlide
 			// 
 			this.tiSlide.Interval = 15;
@@ -339,6 +377,8 @@ namespace gInk
 		private System.Windows.Forms.PictureBox pboxPenWidthIndicator;
 		public System.Windows.Forms.Button btPan;
 		public System.Windows.Forms.Button btInkVisible;
+		public System.Windows.Forms.Button btSegment;
+		public System.Windows.Forms.Button btRuler;
 	}
 }
 
