@@ -37,6 +37,10 @@ namespace gInk
 				cbEraserEnabled.Checked = true;
 			if (Root.PointerEnabled)
 				cbPointerEnabled.Checked = true;
+			if (Root.SegmentEnabled)
+				cbSegmentEnabled.Checked = true;
+			if (Root.RulerEnabled)
+				cbRulerEnabled.Checked = true;
 			if (Root.SnapEnabled)
 				cbSnapEnabled.Checked = true;
 			if (Root.UndoEnabled)
@@ -315,6 +319,16 @@ namespace gInk
 		private void cbPointerEnabled_CheckedChanged(object sender, EventArgs e)
 		{
 			Root.PointerEnabled = cbPointerEnabled.Checked;
+		}
+
+		private void cbSegmentEnabled_CheckedChanged(object sender, EventArgs e)
+		{
+			Root.SegmentEnabled = cbSegmentEnabled.Checked;
+		}
+
+		private void cbRulerEnabled_CheckedChanged(object sender, EventArgs e)
+		{
+			Root.RulerEnabled = cbRulerEnabled.Checked;
 		}
 
 		private void cbSnapEnabled_CheckedChanged(object sender, EventArgs e)

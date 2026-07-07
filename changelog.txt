@@ -4,6 +4,8 @@ v1.3.1 (Jul. 7, 2026)
 - Add Segment Division tool: Draw straight lines divided into 2 to 6 equal parts. Perfect for dividing drawing areas, with endpoints and midpoints marked in distinct colors. Right-click the icon on the toolbar to select the number of divisions (2-6).
 - Add Segment Ruler tool: Measure relative sizes and ratios by drawing lines. First, draw a line to set a "reference" length, then draw subsequent lines to instantly see their lengths relative to the reference (e.g. "1.5 x" or "2.3 x"), complete with visual subdivision ticks.
 - Right-click the Segment Ruler button to reset the reference length and set a new one.
+- Add options to toggle the visibility of the Segment Division and Segment Ruler tools from the General Settings tab.
+
 
 v1.3.0 (Jul. 4, 2026)
 =================

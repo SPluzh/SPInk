@@ -40,6 +40,8 @@ namespace gInk
 			gInk.Hotkey hotkey9 = new gInk.Hotkey();
 			this.cbEraserEnabled = new System.Windows.Forms.CheckBox();
 			this.cbPointerEnabled = new System.Windows.Forms.CheckBox();
+			this.cbSegmentEnabled = new System.Windows.Forms.CheckBox();
+			this.cbRulerEnabled = new System.Windows.Forms.CheckBox();
 			this.cbSnapEnabled = new System.Windows.Forms.CheckBox();
 			this.cbUndoEnabled = new System.Windows.Forms.CheckBox();
 			this.cbClearEnabled = new System.Windows.Forms.CheckBox();
@@ -112,10 +114,32 @@ namespace gInk
 			this.cbPointerEnabled.UseVisualStyleBackColor = true;
 			this.cbPointerEnabled.CheckedChanged += new System.EventHandler(this.cbPointerEnabled_CheckedChanged);
 			// 
+			// cbSegmentEnabled
+			// 
+			this.cbSegmentEnabled.AutoSize = true;
+			this.cbSegmentEnabled.Location = new System.Drawing.Point(282, 125);
+			this.cbSegmentEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+			this.cbSegmentEnabled.Name = "cbSegmentEnabled";
+			this.cbSegmentEnabled.Size = new System.Drawing.Size(22, 21);
+			this.cbSegmentEnabled.TabIndex = 0;
+			this.cbSegmentEnabled.UseVisualStyleBackColor = true;
+			this.cbSegmentEnabled.CheckedChanged += new System.EventHandler(this.cbSegmentEnabled_CheckedChanged);
+			// 
+			// cbRulerEnabled
+			// 
+			this.cbRulerEnabled.AutoSize = true;
+			this.cbRulerEnabled.Location = new System.Drawing.Point(359, 125);
+			this.cbRulerEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+			this.cbRulerEnabled.Name = "cbRulerEnabled";
+			this.cbRulerEnabled.Size = new System.Drawing.Size(22, 21);
+			this.cbRulerEnabled.TabIndex = 0;
+			this.cbRulerEnabled.UseVisualStyleBackColor = true;
+			this.cbRulerEnabled.CheckedChanged += new System.EventHandler(this.cbRulerEnabled_CheckedChanged);
+			// 
 			// cbSnapEnabled
 			// 
 			this.cbSnapEnabled.AutoSize = true;
-			this.cbSnapEnabled.Location = new System.Drawing.Point(488, 126);
+			this.cbSnapEnabled.Location = new System.Drawing.Point(641, 126);
 			this.cbSnapEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.cbSnapEnabled.Name = "cbSnapEnabled";
 			this.cbSnapEnabled.Size = new System.Drawing.Size(22, 21);
@@ -126,7 +150,7 @@ namespace gInk
 			// cbUndoEnabled
 			// 
 			this.cbUndoEnabled.AutoSize = true;
-			this.cbUndoEnabled.Location = new System.Drawing.Point(566, 126);
+			this.cbUndoEnabled.Location = new System.Drawing.Point(719, 126);
 			this.cbUndoEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.cbUndoEnabled.Name = "cbUndoEnabled";
 			this.cbUndoEnabled.Size = new System.Drawing.Size(22, 21);
@@ -137,7 +161,7 @@ namespace gInk
 			// cbClearEnabled
 			// 
 			this.cbClearEnabled.AutoSize = true;
-			this.cbClearEnabled.Location = new System.Drawing.Point(639, 126);
+			this.cbClearEnabled.Location = new System.Drawing.Point(792, 126);
 			this.cbClearEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.cbClearEnabled.Name = "cbClearEnabled";
 			this.cbClearEnabled.Size = new System.Drawing.Size(22, 21);
@@ -148,7 +172,7 @@ namespace gInk
 			// cbWidthEnabled
 			// 
 			this.cbWidthEnabled.AutoSize = true;
-			this.cbWidthEnabled.Location = new System.Drawing.Point(333, 128);
+			this.cbWidthEnabled.Location = new System.Drawing.Point(486, 128);
 			this.cbWidthEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.cbWidthEnabled.Name = "cbWidthEnabled";
 			this.cbWidthEnabled.Size = new System.Drawing.Size(22, 21);
@@ -265,6 +289,8 @@ namespace gInk
 			this.tabPage1.Controls.Add(this.cbWidthEnabled);
 			this.tabPage1.Controls.Add(this.lbNote);
 			this.tabPage1.Controls.Add(this.cbPointerEnabled);
+			this.tabPage1.Controls.Add(this.cbSegmentEnabled);
+			this.tabPage1.Controls.Add(this.cbRulerEnabled);
 			this.tabPage1.Controls.Add(this.btSnapPath);
 			this.tabPage1.Controls.Add(this.cbSnapEnabled);
 			this.tabPage1.Controls.Add(this.cbUndoEnabled);
@@ -298,7 +324,7 @@ namespace gInk
 			this.pictureBox1.Location = new System.Drawing.Point(12, 23);
 			this.pictureBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.pictureBox1.Name = "pictureBox1";
-			this.pictureBox1.Size = new System.Drawing.Size(701, 81);
+			this.pictureBox1.Size = new System.Drawing.Size(854, 81);
 			this.pictureBox1.TabIndex = 7;
 			this.pictureBox1.TabStop = false;
 			// 
@@ -316,7 +342,7 @@ namespace gInk
 			// cbInkVisibleEnabled
 			// 
 			this.cbInkVisibleEnabled.AutoSize = true;
-			this.cbInkVisibleEnabled.Location = new System.Drawing.Point(412, 126);
+			this.cbInkVisibleEnabled.Location = new System.Drawing.Point(565, 126);
 			this.cbInkVisibleEnabled.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.cbInkVisibleEnabled.Name = "cbInkVisibleEnabled";
 			this.cbInkVisibleEnabled.Size = new System.Drawing.Size(22, 21);
@@ -643,7 +669,7 @@ namespace gInk
 			this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.BackColor = System.Drawing.SystemColors.ControlLightLight;
-			this.ClientSize = new System.Drawing.Size(730, 697);
+			this.ClientSize = new System.Drawing.Size(878, 697);
 			this.Controls.Add(this.tabControl1);
 			this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.MaximizeBox = false;
@@ -666,6 +692,8 @@ namespace gInk
 
 		private System.Windows.Forms.CheckBox cbEraserEnabled;
 		private System.Windows.Forms.CheckBox cbPointerEnabled;
+		private System.Windows.Forms.CheckBox cbSegmentEnabled;
+		private System.Windows.Forms.CheckBox cbRulerEnabled;
 		private System.Windows.Forms.CheckBox cbSnapEnabled;
 		private System.Windows.Forms.CheckBox cbUndoEnabled;
 		private System.Windows.Forms.CheckBox cbClearEnabled;
